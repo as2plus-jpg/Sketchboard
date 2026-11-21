@@ -35,6 +35,11 @@
     --ui-font:"Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Segoe UI", Roboto, sans-serif;
     --hand-font:"Nanum Pen Script", "KyoboHand", "Gaegu", "Apple SD Gothic Neo", "Noto Sans KR", cursive;
     --mono-font:"JetBrains Mono", "D2Coding", "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    --title-font:"Black Han Sans", "GmarketSansBold", "Pretendard", -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    --gaegu-font:"Gaegu", "KyoboHand", "Nanum Pen Script", "Apple SD Gothic Neo", "Noto Sans KR", cursive;
+    --serif-font:"Nanum Myeongjo", "Noto Serif KR", "Apple Myeongjo", "Apple SD Gothic Neo", "Noto Sans KR", Georgia, serif;
+    --round-font:"Jua", "Gowun Dodum", "Pretendard", -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    --pixel-font:"DungGeunMo", "D2Coding", "SF Mono", ui-monospace, Menlo, Consolas, monospace;
   }
   html[data-theme="dark"]{
     --bg:#121214;
@@ -185,9 +190,22 @@
   .seg button:hover{background:var(--panel-2)}
   .seg button.on{background:var(--accent);border-color:var(--accent);color:#fff}
   html[data-theme="dark"] .seg button.on{color:#17171c}
-  .seg button[data-font="hand"]{font-family:var(--hand-font);font-size:13.5px;letter-spacing:.01em}
-  .seg button[data-font="mono"]{font-family:var(--mono-font);font-size:11px;letter-spacing:0}
-  .seg button[data-font="sans"]{font-weight:600}
+  /* 글꼴 8종은 2열 칩 그리드 — 236px 패널에서 한 줄에 8개는 답답하다.
+     각 칩 라벨은 그 글꼴로 그려서 어떤 느낌인지 누르기 전에 보이게 한다. */
+  #fontSeg{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+  #fontSeg button{
+    height:31px;padding:0 4px;min-width:0;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    line-height:1.15;letter-spacing:0;
+  }
+  #fontSeg button[data-font="sans"]{font-family:var(--ui-font);font-size:12px;font-weight:600}
+  #fontSeg button[data-font="hand"]{font-family:var(--hand-font);font-size:17px;letter-spacing:.01em}
+  #fontSeg button[data-font="mono"]{font-family:var(--mono-font);font-size:10.5px}
+  #fontSeg button[data-font="title"]{font-family:var(--title-font);font-size:12.5px}
+  #fontSeg button[data-font="gaegu"]{font-family:var(--gaegu-font);font-size:13px;letter-spacing:-.01em}
+  #fontSeg button[data-font="serif"]{font-family:var(--serif-font);font-size:12.5px}
+  #fontSeg button[data-font="round"]{font-family:var(--round-font);font-size:13px}
+  #fontSeg button[data-font="pixel"]{font-family:var(--pixel-font);font-size:11.5px}
   .sec-val{float:right;font-weight:600;color:var(--text);font-size:11px;opacity:.72;
     font-variant-numeric:tabular-nums;letter-spacing:0}
   .size-seg button{
@@ -584,10 +602,15 @@
   </div>
   <div class="sec">
     <label class="sec-label">글꼴</label>
-    <div class="seg" id="fontSeg">
-      <button data-font="sans" class="on">고딕</button>
-      <button data-font="hand">손글씨</button>
-      <button data-font="mono">고정폭</button>
+    <div class="seg" id="fontSeg" role="group" aria-label="글꼴">
+      <button data-font="sans" class="on" title="기본 고딕 · Pretendard">고딕</button>
+      <button data-font="hand" title="펜글씨 · Nanum Pen Script">손글씨</button>
+      <button data-font="mono" title="고정폭 · JetBrains Mono">고정폭</button>
+      <button data-font="title" title="굵은 제목 · Black Han Sans / Gmarket Sans Bold">굵은제목</button>
+      <button data-font="gaegu" title="또박 손글씨 · Gaegu">또박손글씨</button>
+      <button data-font="serif" title="명조 · Nanum Myeongjo">명조</button>
+      <button data-font="round" title="둥근체 · Jua / Gowun Dodum">둥근체</button>
+      <button data-font="pixel" title="도트체 · DungGeunMo">도트체</button>
     </div>
   </div>
   <div class="sec">
@@ -672,6 +695,7 @@
       <tr><td><kbd>V</kbd> <kbd>H</kbd> <kbd>R</kbd> <kbd>D</kbd> <kbd>O</kbd> <kbd>A</kbd> <kbd>L</kbd> <kbd>P</kbd> <kbd>T</kbd> <kbd>N</kbd> <kbd>E</kbd></td><td>같은 도구의 영문 단축키 (지우개는 <kbd>E</kbd>)</td></tr>
       <tr><td><kbd>Space</kbd> + 드래그</td><td>캔버스 이동 (손바닥 도구와 같음)</td></tr>
       <tr><td>휠 / 트랙패드 핀치</td><td>확대 · 축소 (모바일은 두 손가락으로 확대)</td></tr>
+      <tr><td>스타일 패널 › 글꼴</td><td>고딕 · 손글씨 · 고정폭 · 굵은제목 · 또박손글씨 · 명조 · 둥근체 · 도트체 8종 중에서 고름 (선택한 요소에 적용, 없으면 새 요소 기본값)</td></tr>
       <tr><td>스타일 패널 › 글꼴 크기</td><td>선택한 요소(없으면 새 요소 기본값)의 글자 크기를 작게 · 보통 · 크게 · 특대로 바꿈</td></tr>
       <tr><td>더블클릭</td><td>글자 수정 · 빈 곳이면 새 텍스트 (카드의 제목·메모도 같은 방식)</td></tr>
       <tr><td><kbd>Ctrl/Cmd</kbd> + <kbd>V</kbd></td><td>이미지 붙여넣기 · 유튜브나 웹 주소를 붙여넣으면 카드가 생깁니다</td></tr>
@@ -760,7 +784,12 @@
   var FONT_FAMILIES = {
     sans: '"Pretendard","Pretendard Variable",-apple-system,"Apple SD Gothic Neo","Noto Sans KR","Noto Sans CJK KR","Malgun Gothic","Segoe UI",Roboto,sans-serif',
     hand: '"Nanum Pen Script","KyoboHand","Gaegu","Apple SD Gothic Neo","Noto Sans KR","Noto Sans CJK KR",cursive',
-    mono: '"JetBrains Mono","D2Coding","SF Mono",SFMono-Regular,ui-monospace,Menlo,Consolas,"Noto Sans KR",monospace'
+    mono: '"JetBrains Mono","D2Coding","SF Mono",SFMono-Regular,ui-monospace,Menlo,Consolas,"Noto Sans KR",monospace',
+    title: '"Black Han Sans","GmarketSansBold","Pretendard",-apple-system,"Apple SD Gothic Neo","Noto Sans KR","Noto Sans CJK KR","Malgun Gothic",sans-serif',
+    gaegu: '"Gaegu","KyoboHand","Nanum Pen Script","Apple SD Gothic Neo","Noto Sans KR","Noto Sans CJK KR",cursive',
+    serif: '"Nanum Myeongjo","NanumMyeongjo","Noto Serif KR","Apple Myeongjo","Apple SD Gothic Neo","Noto Sans KR","Noto Sans CJK KR",Georgia,serif',
+    round: '"Jua","Gowun Dodum","Pretendard",-apple-system,"Apple SD Gothic Neo","Noto Sans KR","Noto Sans CJK KR","Malgun Gothic",sans-serif',
+    pixel: '"DungGeunMo","D2Coding","SF Mono",SFMono-Regular,ui-monospace,Menlo,Consolas,"Noto Sans KR",monospace'
   };
   function fontKey(f) { return FONT_FAMILIES[f] ? f : 'sans'; }
   function fontStack(f) { return FONT_FAMILIES[fontKey(f)]; }
@@ -770,40 +799,74 @@
   // awaited, and any failure (offline, file://, blocked host, timeout) is swallowed
   // so the system stacks above are used straight away.
   var GF_CSS = 'https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Nanum+Pen+Script&family=JetBrains+Mono:wght@400;600&display=swap';
+  // 추가 5종은 따로 받아서, 기존 세 글꼴의 첫 표시가 느려지지 않게 한다
+  var GF_CSS_EXTRA = 'https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Gaegu:wght@400;700&family=Nanum+Myeongjo:wght@400;700;800&family=Jua&family=Gowun+Dodum&display=swap';
+  var GF_FAMILIES = ['Noto Sans KR', 'Nanum Pen Script', 'JetBrains Mono'];
+  var GF_FAMILIES_EXTRA = ['Black Han Sans', 'Gaegu', 'Nanum Myeongjo', 'Jua', 'Gowun Dodum'];
+
+  // 구글 폰트에 없는 두 글꼴은 jsDelivr의 woff를 @font-face로 직접 건다.
+  // 규칙만 넣어 두고, 실제 내려받기는 document.fonts.load가 그 글꼴을 쓸 때 시작한다.
+  var CDN_FACES = [
+    { family: 'GmarketSansBold', url: 'https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansBold.woff' },
+    { family: 'DungGeunMo', url: 'https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/DungGeunMo.woff' }
+  ];
+  var CDN_FAMILIES = CDN_FACES.map(function (f) { return f.family; });
+
+  function injectCdnFaces() {
+    try {
+      if (document.querySelector('style[data-cdnfonts]')) return;
+      var css = CDN_FACES.map(function (f) {
+        return '@font-face{font-family:"' + f.family + '";font-style:normal;font-weight:400;font-display:swap;src:url("' + f.url + '") format("woff")}';
+      }).join('\n');
+      var st = document.createElement('style');
+      st.setAttribute('data-cdnfonts', '');
+      st.textContent = css;
+      document.head.appendChild(st);
+    } catch (e) { }
+  }
 
   function loadWebFonts() {
     try { if (navigator.onLine === false) return; } catch (e0) { }
     if (typeof fetch !== 'function') return;
     var redraw = function () { requestRender(); if (S.editing) updateEditorBox(); };
-    // canvas text does not trigger a webfont load by itself, so ask for each family
-    var settle = function () {
+    // canvas text does not trigger a webfont load by itself, so ask for each family.
+    // 한글 글꼴은 유니코드 구간별로 쪼개져 있어서, 샘플 글자를 같이 넘겨야 한글 조각까지 받아온다.
+    var probe = '한글 가나다 ABC 123';
+    var askFonts = function (list) {
       try {
-        if (document.fonts && document.fonts.load) {
-          ['16px "Noto Sans KR"', '16px "Nanum Pen Script"', '16px "JetBrains Mono"'].forEach(function (f) {
-            document.fonts.load(f).then(redraw, function () { });
-          });
-        }
+        if (!document.fonts || !document.fonts.load) { redraw(); return; }
+        list.forEach(function (fam) {
+          document.fonts.load('16px "' + fam + '"', probe).then(redraw, function () { });
+        });
       } catch (e) { }
       redraw();
     };
-    var ctl = null, timer = null;
-    try {
-      if (typeof AbortController === 'function') {
-        ctl = new AbortController();
-        timer = setTimeout(function () { ctl.abort(); }, 4000);
-      }
-    } catch (e1) { }
-    fetch(GF_CSS, ctl ? { signal: ctl.signal, credentials: 'omit' } : { credentials: 'omit' }).then(function (r) {
-      if (timer) clearTimeout(timer);
-      if (!r.ok) throw new Error('font css ' + r.status);
-      return r.text();
-    }).then(function (css) {
-      var st = document.createElement('style');
-      st.setAttribute('data-webfonts', '');
-      st.textContent = css;
-      document.head.appendChild(st);
-      settle();
-    }).catch(function () { if (timer) clearTimeout(timer); });
+    injectCdnFaces();
+    askFonts(CDN_FAMILIES);
+
+    var pull = function (href, families) {
+      var ctl = null, timer = null;
+      try {
+        if (typeof AbortController === 'function') {
+          ctl = new AbortController();
+          timer = setTimeout(function () { ctl.abort(); }, 4000);
+        }
+      } catch (e1) { }
+      fetch(href, ctl ? { signal: ctl.signal, credentials: 'omit' } : { credentials: 'omit' }).then(function (r) {
+        if (timer) clearTimeout(timer);
+        if (!r.ok) throw new Error('font css ' + r.status);
+        return r.text();
+      }).then(function (css) {
+        var st = document.createElement('style');
+        st.setAttribute('data-webfonts', '');
+        st.textContent = css;
+        document.head.appendChild(st);
+        askFonts(families);
+      }).catch(function () { if (timer) clearTimeout(timer); });
+    };
+    pull(GF_CSS, GF_FAMILIES);
+    pull(GF_CSS_EXTRA, GF_FAMILIES_EXTRA);
+
     try {
       if (document.fonts) {
         document.fonts.addEventListener('loadingdone', function () { requestRender(); if (S.editing) updateEditorBox(); });
@@ -3029,16 +3092,16 @@
       for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) base[k] = o[k];
       els.push(base);
     }
-    add({ type: 'text', x: 60, y: 40, w: 540, autoW: true, fontSize: 34, text: '신제품 아이디어 브레인스토밍' });
+    add({ type: 'text', x: 60, y: 40, w: 540, autoW: true, fontSize: 32, font: 'title', text: '신제품 아이디어 브레인스토밍' });
     add({ type: 'note', x: 60, y: 120, w: 200, h: 162, fill: '#ffec99', fontSize: 17, text: '타깃 고객\n· 20~30대 직장인\n· 하루 메모 3번' });
-    add({ type: 'note', x: 290, y: 120, w: 200, h: 162, fill: '#a5d8ff', fontSize: 17, text: '핵심 가치\n· 정리 3초\n· 검색은 말로' });
-    add({ type: 'note', x: 520, y: 120, w: 200, h: 162, fill: '#b2f2bb', fontSize: 17, text: '가격\n· ₩4,900 / 월\n· 연 구독 20% 할인' });
+    add({ type: 'note', x: 290, y: 120, w: 200, h: 162, fill: '#a5d8ff', fontSize: 17, font: 'gaegu', text: '핵심 가치\n· 정리 3초\n· 검색은 말로' });
+    add({ type: 'note', x: 520, y: 120, w: 200, h: 162, fill: '#b2f2bb', fontSize: 17, font: 'round', text: '가격\n· ₩4,900 / 월\n· 연 구독 20% 할인' });
     add({ type: 'rect', x: 60, y: 360, w: 172, h: 86, fill: '#ffc9c9', fontSize: 20, text: '문제 정의' });
-    add({ type: 'diamond', x: 300, y: 341, w: 190, h: 124, fill: '#d0bfff', fontSize: 20, text: '차별점?' });
-    add({ type: 'ellipse', x: 560, y: 360, w: 172, h: 86, fill: '#b2f2bb', fontSize: 20, text: 'MVP 검증' });
+    add({ type: 'diamond', x: 300, y: 341, w: 190, h: 124, fill: '#d0bfff', fontSize: 20, font: 'serif', text: '차별점?' });
+    add({ type: 'ellipse', x: 560, y: 360, w: 172, h: 86, fill: '#b2f2bb', fontSize: 20, font: 'round', text: 'MVP 검증' });
     add({ type: 'arrow', points: [{ x: 240, y: 403 }, { x: 286, y: 403 }], stroke: '#1e1e1e', strokeWidth: 3 });
     add({ type: 'arrow', points: [{ x: 498, y: 403 }, { x: 548, y: 403 }], stroke: '#1e1e1e', strokeWidth: 3 });
-    add({ type: 'text', x: 60, y: 500, w: 420, autoW: true, fontSize: 21, stroke: '#e03131', text: '다음 액션 → 3일 안에 프로토타입' });
+    add({ type: 'text', x: 60, y: 500, w: 420, autoW: true, fontSize: 20, stroke: '#e03131', font: 'pixel', text: '다음 액션 → 3일 안에 프로토타입' });
     add({ type: 'text', x: 556, y: 470, w: 240, autoW: true, fontSize: 30, stroke: '#2f9e44', font: 'hand', text: '이게 답이다!' });
     add({ type: 'text', x: 60, y: 578, w: 300, autoW: true, fontSize: 15, stroke: '#868e96', font: 'mono', text: 'v0.2 · 2026-11-21' });
 
