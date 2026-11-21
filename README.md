@@ -2,7 +2,7 @@
 
 손그림 브레인스토밍 화이트보드 — 설치 없이 브라우저에서 바로 쓰는 단일 HTML 앱입니다.
 
-- 앱 실행: https://as2plus-jpg.github.io/sketchboard/
+- 앱 실행: https://as2plus-jpg.github.io/Sketchboard/
 - 아이폰: 사파리로 위 주소를 열고 **공유 → 홈 화면에 추가** 하면 앱처럼 전체 화면으로 실행됩니다.
 
 `index.html` 하나에 스타일과 스크립트가 모두 들어 있고, 메모는 브라우저 로컬 저장소에 보관됩니다(서버로 전송되지 않습니다).
