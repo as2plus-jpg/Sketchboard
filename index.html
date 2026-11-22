@@ -653,6 +653,7 @@
   <div class="sec panel-actions">
     <button id="layerFront" title="맨 앞으로">앞으로</button>
     <button id="layerBack" title="맨 뒤로">뒤로</button>
+    <button id="dupBtn" title="복제 (Ctrl/Cmd + D)" disabled>복제</button>
     <button id="deleteBtn" class="danger" title="삭제 (Delete)">삭제</button>
   </div>
 </aside>
@@ -698,11 +699,13 @@
       <tr><td>스타일 패널 › 글꼴</td><td>고딕 · 손글씨 · 고정폭 · 굵은제목 · 또박손글씨 · 명조 · 둥근체 · 도트체 8종 중에서 고름 (선택한 요소에 적용, 없으면 새 요소 기본값)</td></tr>
       <tr><td>스타일 패널 › 글꼴 크기</td><td>선택한 요소(없으면 새 요소 기본값)의 글자 크기를 작게 · 보통 · 크게 · 특대로 바꿈</td></tr>
       <tr><td>더블클릭</td><td>글자 수정 · 빈 곳이면 새 텍스트 (카드의 제목·메모도 같은 방식)</td></tr>
-      <tr><td><kbd>Ctrl/Cmd</kbd> + <kbd>V</kbd></td><td>이미지 붙여넣기 · 유튜브나 웹 주소를 붙여넣으면 카드가 생깁니다</td></tr>
+      <tr><td><kbd>Ctrl/Cmd</kbd> + <kbd>C</kbd> / <kbd>X</kbd> / <kbd>V</kbd></td><td>선택한 요소 복사 · 잘라내기 · 붙여넣기 (붙여넣으면 조금씩 비켜 놓이고, 이어서 누르면 계속 쌓입니다 · 한글 자판도 동작)</td></tr>
+      <tr><td><kbd>Ctrl/Cmd</kbd> + <kbd>A</kbd></td><td>보드의 모든 요소 선택</td></tr>
+      <tr><td><kbd>Ctrl/Cmd</kbd> + <kbd>V</kbd></td><td>이미지 붙여넣기 · 유튜브나 웹 주소를 붙여넣으면 카드가 생깁니다 (복사해 둔 요소가 있으면 그것을 먼저 붙입니다)</td></tr>
       <tr><td>사진 · 유튜브 · 링크</td><td>우측 상단 <b>추가</b> 버튼에서 넣거나, 이미지 파일을 캔버스로 끌어다 놓아도 됩니다</td></tr>
       <tr><td><kbd>Ctrl/Cmd</kbd> + <kbd>Z</kbd></td><td>실행 취소 (<kbd>Shift</kbd> 함께 누르면 다시 실행)</td></tr>
       <tr><td><kbd>Delete</kbd> / <kbd>Backspace</kbd></td><td>선택한 요소 삭제</td></tr>
-      <tr><td><kbd>Ctrl/Cmd</kbd> + <kbd>D</kbd></td><td>복제</td></tr>
+      <tr><td><kbd>Ctrl/Cmd</kbd> + <kbd>D</kbd></td><td>복제 (스타일 패널의 <b>복제</b> 버튼으로도 됩니다)</td></tr>
       <tr><td><kbd>Shift</kbd> + 클릭</td><td>여러 개 선택</td></tr>
       <tr><td><kbd>Shift</kbd> + <kbd>1</kbd> / <kbd>Shift</kbd> + <kbd>0</kbd></td><td>전체 보기 / 100%</td></tr>
       <tr><td><kbd>Shift</kbd> + <kbd>G</kbd> / <kbd>Shift</kbd> + <kbd>D</kbd></td><td>그리드 / 다크 모드</td></tr>
@@ -903,7 +906,9 @@
     editing: null,
     space: false,
     hoverId: null,
-    marquee: null
+    marquee: null,
+    clipboard: null,      // { els: [...], pastes: n, mark: '...' } — 내부 복사 버퍼
+    pasteHandledAt: 0     // paste 이벤트가 처리한 시각 (keydown 대체 경로와 겹치지 않게)
   };
 
   // style applied to new elements
@@ -2711,6 +2716,8 @@
     $('#opacityRange').value = String(pct);
     $('#opacityVal').textContent = pct + '%';
     $('#deleteBtn').disabled = !sel.length;
+    var dupBtn = $('#dupBtn');
+    if (dupBtn) dupBtn.disabled = !sel.length;
   }
 
   function updateEmptyHint() {
@@ -2768,7 +2775,107 @@
     S.els = S.els.concat(copies);
     S.sel = new Set(copies.map(function (c) { return c.id; }));
     pushHistory(before);
+    syncPanel(); requestRender(); scheduleSave();
+  }
+
+  /* =========================================================================
+     복사 · 잘라내기 · 붙여넣기 · 전체 선택
+     - 내부 클립보드(S.clipboard)가 정답이고, 시스템 클립보드는 되면 좋은 보조.
+       (file:// · 권한 차단 · iOS 처럼 writeText 가 막히는 곳에서도 100% 동작)
+     - 모든 타입은 shiftElement 로 깊은 복사하므로 image.src(dataUrl)·yt.videoId·
+       link.url·text.autoW·font·fontSize·points·opacity 가 그대로 따라온다.
+     ========================================================================= */
+  var CLIP_PREFIX = '__sketchboard_els__:';
+  var PASTE_STEP = 26;
+
+  function copySelected(quiet) {
+    var sel = selectedElements();
+    if (!sel.length) return 0;
+    var data = deepClone(sel);
+    var mark = CLIP_PREFIX + JSON.stringify({ type: 'sketchboard-clip', v: 1, elements: data });
+    S.clipboard = { els: data, pastes: 0, mark: mark };
+    S.pasteHandledAt = 0;
+    // 시스템 클립보드 기록은 실패해도 조용히 넘어간다
+    try { copyText(mark); } catch (e) { }
+    if (!quiet) toast(sel.length > 1 ? sel.length + '개를 복사했습니다' : '복사했습니다', 1600);
+    return sel.length;
+  }
+
+  function cutSelected() {
+    if (!S.sel.size) return;
+    var n = copySelected(true);
+    if (!n) return;
+    deleteSelected();
+    toast(n > 1 ? n + '개를 잘라냈습니다' : '잘라냈습니다', 1600);
+  }
+
+  function selectAllElements() {
+    if (!S.els.length) return 0;
+    S.sel = new Set(S.els.map(function (e) { return e.id; }));
     syncPanel(); requestRender();
+    toast(S.els.length + '개를 선택했습니다', 1400);
+    return S.els.length;
+  }
+
+  function parseClipboardJSON(txt) {
+    if (!txt || txt.indexOf(CLIP_PREFIX) !== 0) return null;
+    try {
+      var d = JSON.parse(txt.slice(CLIP_PREFIX.length));
+      var els = Array.isArray(d) ? d : (d && d.elements);
+      if (!Array.isArray(els) || !els.length) return null;
+      var clean = sanitize(els);
+      return clean.length ? clean : null;
+    } catch (e) { return null; }
+  }
+
+  // 사본 만들기: 복사한 원본이 아직 보드에 있으면 대각선으로 비켜 놓고(연속 붙여넣기는 누적),
+  // 잘라낸 요소처럼 원본이 사라졌으면 첫 붙여넣기는 제자리에 놓는다.
+  function buildPastedCopies(list, forceOffset) {
+    var cb = S.clipboard;
+    var own = !!(cb && cb.els === list);
+    var n = own ? (cb.pastes || 0) : 0;
+    var onBoard = 0;
+    for (var i = 0; i < list.length; i++) if (elementById(list[i].id)) onBoard++;
+    var step = (forceOffset || onBoard) ? n + 1 : n;
+    if (own) cb.pastes = n + 1;
+    var d = PASTE_STEP * step;
+    var out = [];
+    for (var j = 0; j < list.length; j++) out.push(shiftElement(list[j], d, d));
+    return out;
+  }
+
+  function pasteElements(list, forceOffset) {
+    if (!list || !list.length) return 0;
+    var copies = buildPastedCopies(list, forceOffset);
+    if (!copies.length) return 0;
+    var before = snapshotJSON();
+    S.els = S.els.concat(copies);
+    S.sel = new Set(copies.map(function (c) { return c.id; }));
+    pushHistory(before);
+    syncPanel(); updateEmptyHint(); requestRender(); scheduleSave();
+    S.pasteHandledAt = Date.now();
+    toast(copies.length > 1 ? copies.length + '개를 붙여넣었습니다' : '붙여넣었습니다', 1600);
+    return copies.length;
+  }
+
+  function pasteClipboard() {
+    var cb = S.clipboard;
+    if (!cb || !cb.els || !cb.els.length) return 0;
+    return pasteElements(cb.els, false);
+  }
+
+  // 네이티브 paste 이벤트가 오지 않는 환경(헤드리스·권한 차단 등)을 위한 대체 경로.
+  // paste 이벤트가 같은 키 입력에서 이미 처리했다면 아무 것도 하지 않는다.
+  var pasteFallbackToken = 0;
+  function scheduleInternalPaste() {
+    if (S.editing) return;
+    if (!S.clipboard || !S.clipboard.els || !S.clipboard.els.length) return;
+    var token = ++pasteFallbackToken;
+    setTimeout(function () {
+      if (token !== pasteFallbackToken) return;
+      if (S.pasteHandledAt && Date.now() - S.pasteHandledAt < 300) return;
+      pasteClipboard();
+    }, 0);
   }
 
   function bringToFront() {
@@ -3547,7 +3654,7 @@
       else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); hideModal('urlModal'); }
     });
 
-    // ---- 붙여넣기: 이미지, 그리고 유튜브 / 웹 주소 ----
+    // ---- 붙여넣기: 이미지 · Sketchboard 복사본 · 유튜브 / 웹 주소 ----
     document.addEventListener('paste', function (e) {
       if (S.editing) return;
       var ae = document.activeElement;
@@ -3567,16 +3674,40 @@
       }
       if (imgFile) {
         e.preventDefault();
+        S.pasteHandledAt = Date.now();
         importImageFile(imgFile, pasteWorldPoint());
         return;
       }
       var txt = '';
       try { txt = dt.getData('text/plain') || ''; } catch (err) { }
+      // 1) Sketchboard 가 쓴 복사본 — 같은 세션이면 내부 버퍼(연속 오프셋)를 그대로 쓴다
+      var marked = parseClipboardJSON(txt);
+      if (marked) {
+        e.preventDefault();
+        if (S.clipboard && S.clipboard.els && S.clipboard.els.length && txt === S.clipboard.mark) {
+          pasteClipboard();
+        } else {
+          S.clipboard = { els: marked, pastes: 0, mark: txt };
+          pasteElements(marked, true);
+        }
+        S.pasteHandledAt = Date.now();
+        return;
+      }
+      // 2) 유튜브 / 웹 주소
       var u = extractUrl(txt);
-      if (!u) return;
-      e.preventDefault();
-      var made = addCardFromUrl(u, pasteWorldPoint());
-      toast(made ? (made.type === 'yt' ? '유튜브 카드를 추가했습니다' : '링크 카드를 추가했습니다') : '주소를 알아보지 못했습니다');
+      if (u) {
+        e.preventDefault();
+        S.pasteHandledAt = Date.now();
+        var made = addCardFromUrl(u, pasteWorldPoint());
+        toast(made ? (made.type === 'yt' ? '유튜브 카드를 추가했습니다' : '링크 카드를 추가했습니다') : '주소를 알아보지 못했습니다');
+        return;
+      }
+      // 3) 방금 Ctrl/Cmd+C 로 복사해 둔 요소 — 클립보드에 아무 일반 텍스트가 있어도 이것을 우선한다
+      if (S.clipboard && S.clipboard.els && S.clipboard.els.length) {
+        e.preventDefault();
+        pasteClipboard();
+        S.pasteHandledAt = Date.now();
+      }
     });
 
     var menu = $('#menu');
@@ -3646,6 +3777,7 @@
     });
     $('#layerFront').addEventListener('click', bringToFront);
     $('#layerBack').addEventListener('click', sendToBack);
+    $('#dupBtn').addEventListener('click', duplicateSelected);
     $('#deleteBtn').addEventListener('click', deleteSelected);
 
     $('#helpBtn').addEventListener('click', function () { $('#helpModal').hidden = false; });
@@ -3802,6 +3934,14 @@
     });
   }
 
+  // 한글 자판에서는 Ctrl+C 의 e.key 가 'ㅊ' 이므로 e.code 로도 글자를 잡는다
+  function letterKeyOf(e) {
+    var code = e.code || '';
+    if (/^Key[A-Z]$/.test(code)) return code.charAt(3).toLowerCase();
+    var lk = (e.key || '').toLowerCase();
+    return /^[a-z]$/.test(lk) ? lk : '';
+  }
+
   function onKeyDown(e) {
     // 열린 모달이 있으면 Esc는 그 모달을 먼저 닫는다(재생 중인 임베드도 함께 멈춤)
     if (e.key === 'Escape') {
@@ -3831,10 +3971,32 @@
     if (/^[0-9]$/.test(e.key || '')) digit = e.key;
     else if (/^(Digit|Numpad)[0-9]$/.test(code)) digit = code.replace(/^(Digit|Numpad)/, '');
 
-    if (mod && k === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); return; }
-    if (mod && k === 'y') { e.preventDefault(); redo(); return; }
-    if (mod && k === 's') { e.preventDefault(); exportJSON(); return; }
-    if (mod && k === 'd') { e.preventDefault(); duplicateSelected(); return; }
+    /* 복사 · 잘라내기 · 붙여넣기 · 전체 선택 (한글 자판 포함) */
+    var kk = letterKeyOf(e);
+    if (mod && !e.altKey && !e.shiftKey) {
+      if (kk === 'c') {
+        if (S.sel.size) { e.preventDefault(); copySelected(); }
+        return;
+      }
+      if (kk === 'x') {
+        if (S.sel.size) { e.preventDefault(); cutSelected(); }
+        return;
+      }
+      if (kk === 'a') {
+        if (document.querySelector('.modal:not([hidden])')) return;
+        e.preventDefault(); selectAllElements(); return;
+      }
+      if (kk === 'v') {
+        // 실제 붙여넣기는 paste 이벤트가 맡고, 이벤트가 오지 않는 환경만 여기서 받쳐 준다
+        scheduleInternalPaste();
+        return;
+      }
+    }
+
+    if (mod && kk === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); return; }
+    if (mod && kk === 'y') { e.preventDefault(); redo(); return; }
+    if (mod && kk === 's') { e.preventDefault(); exportJSON(); return; }
+    if (mod && kk === 'd') { e.preventDefault(); duplicateSelected(); return; }
     if (mod && (k === '=' || k === '+')) { e.preventDefault(); zoomAt(VW / 2, VH / 2, 1.2); return; }
     if (mod && k === '-') { e.preventDefault(); zoomAt(VW / 2, VH / 2, 1 / 1.2); return; }
 
