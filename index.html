@@ -2488,6 +2488,11 @@
         if (el.points.length < 2) {
           S.els = S.els.filter(function (x) { return x.id !== el.id; });
           S.sel.delete(el.id);
+        } else if (S.tool === 'draw') {
+          // 펜은 한 획을 마쳐도 도구를 그대로 두어 연속으로 이어 그릴 수 있게 한다.
+          // 획은 선택하지 않으므로 다음 획을 바로 그릴 수 있고, 나가려면 Esc·V·1 또는 선택 버튼을 쓴다.
+          S.sel.clear();
+          pushHistory(d.before);
         } else {
           setTool('select');
           S.sel.clear(); S.sel.add(el.id);
