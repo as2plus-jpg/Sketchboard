@@ -704,7 +704,7 @@
       <tr><td><kbd>Ctrl/Cmd</kbd> + <kbd>V</kbd></td><td>이미지 붙여넣기 · 유튜브나 웹 주소를 붙여넣으면 카드가 생깁니다 (복사해 둔 요소가 있으면 그것을 먼저 붙입니다)</td></tr>
       <tr><td>사진 · 유튜브 · 링크</td><td>우측 상단 <b>추가</b> 버튼에서 넣거나, 이미지 파일을 캔버스로 끌어다 놓아도 됩니다</td></tr>
       <tr><td><kbd>Ctrl/Cmd</kbd> + <kbd>Z</kbd></td><td>실행 취소 (<kbd>Shift</kbd> 함께 누르면 다시 실행)</td></tr>
-      <tr><td><kbd>Delete</kbd> / <kbd>Backspace</kbd></td><td>선택한 요소 삭제</td></tr>
+      <tr><td><kbd>Delete</kbd></td><td>선택한 요소 삭제 (<kbd>Backspace</kbd>는 삭제하지 않음)</td></tr>
       <tr><td><kbd>Ctrl/Cmd</kbd> + <kbd>D</kbd></td><td>복제 (스타일 패널의 <b>복제</b> 버튼으로도 됩니다)</td></tr>
       <tr><td><kbd>Shift</kbd> + 클릭</td><td>여러 개 선택</td></tr>
       <tr><td><kbd>Shift</kbd> + <kbd>1</kbd> / <kbd>Shift</kbd> + <kbd>0</kbd></td><td>전체 보기 / 100%</td></tr>
@@ -4010,7 +4010,10 @@
       e.preventDefault();
       return;
     }
-    if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); deleteSelected(); return; }
+    // Backspace 는 캔버스에서 삭제하지 않는다(오타 지우려다 요소가 사라지는 일·브라우저 뒤로가기 방지)
+    // 텍스트 입력 중에는 위에서 input/textarea 로 먼저 빠져나가므로 글자 지우기는 그대로 동작한다
+    if (e.key === 'Delete') { e.preventDefault(); deleteSelected(); return; }
+    if (e.key === 'Backspace') { e.preventDefault(); return; }
     if (e.key === 'Escape') {
       if (S.editing) commitEditing();
       S.sel.clear(); syncPanel(); setTool('select'); requestRender();
